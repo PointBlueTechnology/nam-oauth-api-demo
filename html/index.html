@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+	<meta charset='utf-8' />
+	<meta name='viewport' content='width=device-width, initial-scale=1' />
+
+	<!-- ******* TITLE OF PAGE ******** -->
+
+	<title>API Demo</title>
+
+
+	<!-- ******* CSS *******************-->
+
+	<!-- BOOTSTRAP CSS -->
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<!-- ******* JAVASCRIPT *******************-->
+
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+
+	<script src = 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
+
+	<script>
+
+
+		window.onload = function() {
+
+			var gateway = '{{GATEWAY}}'
+
+			if (gateway) {
+				$("#gateway").html(gateway)
+			}
+
+			if (gateway == "AWS_JWT") {
+				$("#bronze_panel").show()
+			}
+
+			// look for login url in local storage
+			// just for reference
+			if (localStorage.getItem("authURI")) {
+				console.log("authn uri: " + localStorage.getItem("authURI"));
+			}
+
+			// look for parameters in url
+			if (window.location.hash) {
+				var urlParams = getParams(window.location.hash.substring(1));
+
+				console.log("the url params are: ");
+
+				// show the url parameters nicely in the console
+				for (const prop in urlParams) {
+					console.log(prop + ": " + urlParams[prop]);
+				}
+
+				// if we have an authorization code, send it to the server
+				// immediately to get an access token and id token from server.
+				// The tokens will be sent to the server, but the server side app
+				// will also send them down to the browser for demo purposes
+				if (urlParams.code) {
+					getAccessToken(urlParams.code)
+				}
+			}
+		}
+
+	</script>
+
+	<script>
+
+	function getParams(hash) {
+
+		var arr = hash.split("&");
+
+		var params = {};
+
+		// convert the url params to an object
+		for (var i = 0; i < arr.length; i++) {
+			var kvp = arr[i].split("=");
+			params[kvp[0]] = kvp[1];
+		}
+
+		return params;
+	}
+
+	function getAccessToken(code) {
+
+		$.ajax({
+			type: 'POST',
+			data: JSON.stringify({ "code": code}),
+			contentType: 'application/json',
+			url: '/getAccessToken',
+			success: function(data) {
+				var obj = JSON.parse(data)
+
+				console.log("access token:")
+				console.log(obj.access_token)
+
+				console.log("id token:")
+				console.log(obj.id_token)
+
+				$("#access_token_decoded").html("<pre>" + JSON.stringify(obj.access_token_decoded, null, 1) + "</pre>")
+
+				$("#id_token_decoded").html("<pre>" + JSON.stringify(obj.id_token_decoded, null, 1) + "</pre>")
+			}
+		});
+	}
+
+	// make a request to the API gateway
+	// request will go to the server-side app first so the app can include the access token
+	function getData(endpoint) {
+
+		$.ajax({
+			type: 'POST',
+			data: JSON.stringify({ "endpoint": endpoint }),
+			contentType: 'application/json',
+			url: '/getData',
+			success: function(data) {
+				console.dir(data)
+
+				var obj
+
+				if (typeof data === 'object') { obj = data }
+				else { obj = JSON.parse(data) }
+
+				$("#results_" + endpoint).html("<pre>" + JSON.stringify(obj, null, 1) + "</pre>");
+			}
+		})
+	}
+
+	function getNonce() {
+		var text = "";
+		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+		for (var i = 0; i < 12; i++)
+			text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+		return text;
+	}
+
+	function redirectToAuth(level) {
+        var uri = '{{ISSUER}}/authz?response_type=code&client_id={{CLIENT_ID}}&redirect_uri={{REDIRECT_URI}}&response_mode=fragment'
+
+		uri += '&state=' + getNonce()
+		uri += '&nonce=' + getNonce()
+		uri += '&prompt=login&scope=openid'
+
+        //This adds the scopes used to demo authorization
+		if (gateway == "TYK") {}
+		else {
+			if (level === "silver" || level === "gold") { uri += " http://myapp.com/scp/silver"; };
+
+			if (level === "gold") { uri += " http://myapp.com/scp/gold"; }
+		}
+
+		localStorage.setItem("authURI", uri);
+
+		console.log("authn URI: " + uri);
+
+		window.location = uri;
+	}
+	
+	function log_out() {
+		
+		localStorage.clear();
+
+		$.ajax({
+			type: 'POST',
+			url: '/endSession',
+			success: function(data) {
+				console.log("server-side access token cleared.")
+				//We could call IDP logout URL here if we were not forcing auth
+				location.reload(true)
+
+			}
+		})
+		
+		
+	}
+
+	</script>
+</head>
+
+<body>
+<!-- Wrapper -->
+<div class="container">
+
+	<!-- Static navbar -->
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="/">API Demo</a>
+			</div>
+			<div id="navbar" class="navbar-collapse collapse">
+				<ul class="nav navbar-nav">
+					<li><a href="#" onclick="log_out()">Log out / Reload</a></li>
+				</ul>
+
+				<ul class="nav navbar-nav navbar-right">
+				</ul>
+
+			</div><!--/.nav-collapse -->
+		</div><!--/.container-fluid -->
+	</nav>
+
+	<div class="well" style="background-color: rgb(234, 239, 247)">
+		<div class="row" style="vertical-align: top">
+			<div class="col-md-6" style="vertical-align: top">
+
+				<!--p><i>The currently logged-in user is: <span id = "username" style = "font-weight: bold"></span></i></p-->
+
+				<p><i>The gateway is: <span id = "gateway" style = "font-weight: bold"></span></i></p>
+
+
+<div class = "panel panel-default">
+	<div class = "panel-heading">
+		Basic Access: A list of the Authors
+	</div>
+	<div class = "panel-body">
+		<div class = "row">
+			<div style= "text-align: center; padding-top: 5px; padding-bottom: 5px">
+				<button type="button" class="btn btn-default" onclick="redirectToAuth('silver')">authenticate</button>
+			</div>
+
+		</div>
+
+		<span id = "authors">proxy endpoint: <span class = "proxy_uri">{{GATEWAY_URI}}/authors</span>
+
+		<div style= "text-align: center; padding-top: 10px">
+			<button type="button" class="btn btn-info" onclick="getData('authors')">show me the authors!</button>
+		</div>
+
+		<div class="panel panel-primary" style ="margin-top:10px">
+			<div class="panel-heading">
+				<h3 class="panel-title">Planets</h3>
+			</div>
+			<div class="panel-body" id = "results_authors"></div>
+		</div>
+	</div>
+</div>
+			
+
+	
+
+				<div class = "panel panel-warning">
+					<div class = "panel-heading">
+						Elevated Access: A list of astronauts
+					</div>
+					<div class = "panel-body">
+						<div class = "row">
+
+							<div style= "text-align: center; padding-top: 5px; padding-bottom: 5px">
+								<button type="button" class="btn btn-warning" onclick="redirectToAuth('gold')">authenticate</button>
+							</div>
+						</div>
+						<span id = "astronauts">proxy endpoint: <span class = "proxy_uri">{{GATEWAY_URI}}/astronauts</span>
+
+						<div style= "text-align: center; padding-top: 10px">
+							<button type="button" class="btn btn-info" onclick="getData('astronauts')">List some Apollo astronauts</button>
+						</div>
+
+						<div class="panel panel-primary" style ="margin-top:10px">
+							<div class="panel-heading">
+								<h3 class="panel-title">Astronauts</h3>
+							</div>
+							<div class="panel-body" id = "results_astronauts"></div>
+						</div>
+
+					</div>
+				</div>
+			</div> <!-- end left col -->
+
+			<div class="col-md-6">
+
+				<div class = "panel panel-primary">
+					<div class = "panel-heading"><b>The OAuth flow</b></div>
+
+					<div class = "panel-body" id="">
+						<ul>
+						<li>The user is authenticating using the authorization code grant type.</li>
+						<li>After authentication, you can see the authorization code in the address bar, and it's also in the developer console.</li>
+						<li>The access token and id token are available in the console. These would not typically be sent to the browser in an authorization code flow, unless you're using PKCE.</li>
+						<li>They are shown here for demo purposes.</li>
+					</div>
+				</div>
+
+				<div class = "panel panel-success" id="access_token_div">
+					<div class = "panel-heading">Access token, decoded:</div>
+					<div class = "panel-body" id="access_token_decoded">[none]</div>
+				</div>
+
+				<div class = "panel panel-success" id="id_token_div">
+					<div class = "panel-heading">ID token, decoded:</div>
+					<div class = "panel-body" id="id_token_decoded">[none]</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+</div>
+</body>
+</html>
