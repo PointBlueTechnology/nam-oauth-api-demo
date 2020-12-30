@@ -1,6 +1,6 @@
 {
   "name": "@pointblue/nam-oauth-api-demo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Demo app for OAuth API integration",
   "main": "app.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "keywords": [
     "oauth"
   ],
-    "author": "jcombs@pointbluetech.com",
+  "author": "jcombs@pointbluetech.com",
   "dependencies": {
     "@pointblue/jwt-verifier": "^1.0.0",
     "body-parser": "^1.19.0",
