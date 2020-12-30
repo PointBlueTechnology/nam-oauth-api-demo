@@ -1,15 +1,19 @@
 {
-  "name": "Microfocus OAuth demo",
+  "name": "@pointblue/nam-oauth-api-demo",
   "version": "1.0.0",
-  "description": "NAM integrations with api gateways",
+  "description": "Demo app for OAuth API integration",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "engines": {
-    "node": "6.11.3"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PointBlueTechnology/nam-oauth-api-demo.git"
   },
-  "author": "jcombs@pointbluetech.com",
+  "keywords": [
+    "oauth"
+  ],
+    "author": "jcombs@pointbluetech.com",
   "dependencies": {
     "@pointblue/jwt-verifier": "^1.0.0",
     "body-parser": "^1.19.0",
@@ -18,5 +22,10 @@
     "express-session": "^1.17.0",
     "jose": "^3.5.0",
     "request": "^2.88.2"
-  }
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/PointBlueTechnology/nam-oauth-api-demo/issues"
+  },
+  "homepage": "https://github.com/PointBlueTechnology/nam-oauth-api-demo#readme"
 }
